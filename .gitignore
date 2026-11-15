@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.pyc
+
+# Local secrets — NEVER commit these
+.streamlit/secrets.toml
+.env
+.env.*
+.env.local
+
+# Saved chats are local / per-user (and the cloud filesystem is ephemeral anyway)
+chats/
+
+# Data lives in Neon (private), never in the repo
+marvel_os.db
+*.db-wal
+*.db-shm
+
+# Neon CLI scaffolding (not needed by the Python app)
+.neon
+neon.ts
+package.json
+package-lock.json
+node_modules/

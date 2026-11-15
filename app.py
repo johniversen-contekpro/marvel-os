@@ -80,6 +80,15 @@ def _check_password():
 if not _check_password():
     st.stop()
 
+# Garde : base non configurée (DATABASE_URL absent et pas de SQLite local) -> message clair.
+if not db.IS_POSTGRES and not db.DEFAULT_SQLITE.exists():
+    st.error(
+        "⚠️ **Database not configured.** Add **`DATABASE_URL`** in the app's "
+        "**Settings → Secrets** (the Neon *pooled* connection string, in quotes, on one line), "
+        "then save — the app reboots and connects to Neon."
+    )
+    st.stop()
+
 
 # --------------------------------------------------------------------------- persistence
 def new_chat_id():

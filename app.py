@@ -87,6 +87,9 @@ if not db.IS_POSTGRES and not db.DEFAULT_SQLITE.exists():
         "**Settings → Secrets** (the Neon *pooled* connection string, in quotes, on one line), "
         "then save — the app reboots and connects to Neon."
     )
+    _present = [k for k in _CONFIG_KEYS if os.environ.get(k)]
+    st.caption("🔎 Diagnostic — secrets detected (names only): "
+               + (", ".join(_present) if _present else "**none** (secrets not saved/loaded)"))
     st.stop()
 
 

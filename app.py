@@ -74,6 +74,12 @@ section[data-testid="stSidebar"] h1 { color: var(--navy); }
 .marvel-wordmark .os { color: var(--red); }
 .marvel-sub { color:#C9D6E6; font-size: 13.5px; margin-top: 7px; }
 .stButton button:hover { border-color: var(--red) !important; color: var(--red) !important; }
+/* Sidebar compacte : voir Brand scope + Conversations sans scroller */
+section[data-testid="stSidebar"] [data-testid="stVerticalBlock"] { gap: 0.4rem; }
+section[data-testid="stSidebar"] hr { margin: 0.3rem 0; }
+section[data-testid="stSidebar"] h1 { margin: 0 0 .15rem 0; font-size: 1.4rem; }
+section[data-testid="stSidebar"] h2, section[data-testid="stSidebar"] h3 { margin: .1rem 0; padding: 0; font-size: 1rem; }
+section[data-testid="stSidebar"] .stButton button { padding: .2rem .5rem; }
 </style>
 """
 
@@ -185,10 +191,9 @@ with st.sidebar:
     st.caption("One source of truth for Marvel's data, with an AI agent on top.")
 
     rows, total = brand_counts()
-    st.metric("Call sheets loaded", total)
-    st.caption("  ·  ".join(f"**{b}** {n}" for b, n in rows))
+    st.markdown(f"**{total}** call sheets &nbsp;·&nbsp; "
+                + " · ".join(f"{b} {n}" for b, n in rows))
 
-    st.divider()
     st.subheader("Brand scope")
     SCOPES = {
         "All brands (kept separate)": None,
@@ -197,8 +202,6 @@ with st.sidebar:
     }
     scope_label = st.radio("Scope", list(SCOPES), label_visibility="collapsed")
     scope_brand = SCOPES[scope_label]
-    st.caption("Onboarding a Modular rep? Pick **Modular only** — the agent then ignores "
-               "Mobile entirely, so answers never mix the two businesses.")
 
     st.divider()
     st.subheader("💬 Conversations")

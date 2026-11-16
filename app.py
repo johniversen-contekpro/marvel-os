@@ -189,6 +189,18 @@ with st.sidebar:
     st.caption("  ·  ".join(f"**{b}** {n}" for b, n in rows))
 
     st.divider()
+    st.subheader("Brand scope")
+    SCOPES = {
+        "All brands (kept separate)": None,
+        "Modular only — permanent kitchens": "modular",
+        "Mobile only — rental trailers": "mobile",
+    }
+    scope_label = st.radio("Scope", list(SCOPES), label_visibility="collapsed")
+    scope_brand = SCOPES[scope_label]
+    st.caption("Onboarding a Modular rep? Pick **Modular only** — the agent then ignores "
+               "Mobile entirely, so answers never mix the two businesses.")
+
+    st.divider()
     st.subheader("💬 Conversations")
     if st.button("➕ New chat", use_container_width=True):
         st.session_state.chat_id = new_chat_id()
@@ -210,18 +222,6 @@ with st.sidebar:
                 st.session_state.chat_id = new_chat_id()
                 st.session_state.messages = []
             st.rerun()
-
-    st.divider()
-    st.subheader("Brand scope")
-    SCOPES = {
-        "All brands (kept separate)": None,
-        "Modular only — permanent kitchens": "modular",
-        "Mobile only — rental trailers": "mobile",
-    }
-    scope_label = st.radio("Scope", list(SCOPES), label_visibility="collapsed")
-    scope_brand = SCOPES[scope_label]
-    st.caption("Onboarding a Modular rep? Pick **Modular only** — the agent then ignores "
-               "Mobile entirely, so answers never mix the two businesses.")
 
     st.divider()
     st.subheader("Try a question")

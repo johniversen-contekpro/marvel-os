@@ -79,7 +79,7 @@ section[data-testid="stSidebar"] h1 { color: var(--navy); }
 
 BRAND_BANNER = """
 <div class="marvel-banner">
-  <div class="marvel-wordmark">MARVEL&nbsp;<span class="os">OS</span></div>
+  <div class="marvel-wordmark">🏗️&nbsp;MARVEL&nbsp;<span class="os">OS</span></div>
   <div class="marvel-sub">Marvel Buildings — one source of truth, with an AI agent on top</div>
 </div>
 """

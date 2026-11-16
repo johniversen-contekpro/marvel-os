@@ -1,0 +1,7 @@
+# Thème Marvel — Navy / Rouge. (secrets.toml, lui, reste gitignoré.)
+[theme]
+primaryColor = "#C8102E"             # rouge Marvel (accents, boutons, widgets actifs)
+backgroundColor = "#FFFFFF"          # zone de contenu (lisibilité des réponses/tableaux)
+secondaryBackgroundColor = "#EEF2F7" # sidebar / bulles (navy très clair)
+textColor = "#0A2342"                # navy foncé pour le texte
+font = "sans serif"

@@ -57,6 +57,33 @@ SAMPLE_QUESTIONS = [
     "Which equipment brands (ovens, refrigeration, hoods) come up most?",
 ]
 
+# Marque Marvel — Navy #0A2342 / Rouge #C8102E.
+BRAND_CSS = """
+<style>
+:root { --navy:#0A2342; --red:#C8102E; }
+h1, h2, h3 { color: var(--navy); }
+a, a:visited { color: var(--red) !important; }
+section[data-testid="stSidebar"] { border-right: 3px solid var(--red); }
+section[data-testid="stSidebar"] h1 { color: var(--navy); }
+.marvel-banner {
+  background: linear-gradient(90deg, #0A2342 0%, #163a63 100%);
+  border-left: 6px solid var(--red);
+  border-radius: 12px; padding: 20px 26px; margin: 2px 0 14px 0;
+}
+.marvel-wordmark { font-size: 30px; font-weight: 800; letter-spacing: .6px; color:#fff; line-height:1; }
+.marvel-wordmark .os { color: var(--red); }
+.marvel-sub { color:#C9D6E6; font-size: 13.5px; margin-top: 7px; }
+.stButton button:hover { border-color: var(--red) !important; color: var(--red) !important; }
+</style>
+"""
+
+BRAND_BANNER = """
+<div class="marvel-banner">
+  <div class="marvel-wordmark">MARVEL&nbsp;<span class="os">OS</span></div>
+  <div class="marvel-sub">Marvel Buildings — one source of truth, with an AI agent on top</div>
+</div>
+"""
+
 st.set_page_config(page_title="Marvel OS", page_icon="🏗️", layout="centered")
 
 
@@ -65,7 +92,8 @@ def _check_password():
     pw = os.environ.get("APP_PASSWORD")
     if not pw or st.session_state.get("auth_ok"):
         return True
-    st.title("🏗️ Marvel OS")
+    st.markdown(BRAND_CSS, unsafe_allow_html=True)
+    st.markdown(BRAND_BANNER, unsafe_allow_html=True)
     st.caption("Private demo — enter the password to continue.")
     entered = st.text_input("Password", type="password")
     if entered:
@@ -143,6 +171,8 @@ def brand_counts():
     return rows, sum(n for _, n in rows)
 
 
+st.markdown(BRAND_CSS, unsafe_allow_html=True)   # charte Marvel, avant le rendu de la sidebar
+
 # --------------------------------------------------------------------------- state
 if "chat_id" not in st.session_state:
     st.session_state.chat_id = new_chat_id()
@@ -213,7 +243,7 @@ with st.sidebar:
     st.caption(f"Model: `{agent.MODEL}`  ·  No RAG — SQL + full-text + tools.")
 
 # --------------------------------------------------------------------------- header
-st.title("Ask our call library")
+st.markdown(BRAND_BANNER, unsafe_allow_html=True)
 st.caption("Plain-language questions over 327 synthesized sales/technical calls. "
            "Every answer is sourced back to the call it came from.")
 if scope_brand:

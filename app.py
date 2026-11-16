@@ -74,12 +74,10 @@ section[data-testid="stSidebar"] h1 { color: var(--navy); }
 .marvel-wordmark .os { color: var(--red); }
 .marvel-sub { color:#C9D6E6; font-size: 13.5px; margin-top: 7px; }
 .stButton button:hover { border-color: var(--red) !important; color: var(--red) !important; }
-/* Sidebar compacte : voir Brand scope + Conversations sans scroller */
-section[data-testid="stSidebar"] [data-testid="stVerticalBlock"] { gap: 0.4rem; }
-section[data-testid="stSidebar"] hr { margin: 0.3rem 0; }
-section[data-testid="stSidebar"] h1 { margin: 0 0 .15rem 0; font-size: 1.4rem; }
-section[data-testid="stSidebar"] h2, section[data-testid="stSidebar"] h3 { margin: .1rem 0; padding: 0; font-size: 1rem; }
-section[data-testid="stSidebar"] .stButton button { padding: .2rem .5rem; }
+/* Sidebar un peu plus compacte, sans chevauchement */
+section[data-testid="stSidebar"] hr { margin: 0.5rem 0; }
+section[data-testid="stSidebar"] h1 { font-size: 1.4rem; margin-bottom: .25rem; }
+section[data-testid="stSidebar"] h2, section[data-testid="stSidebar"] h3 { font-size: 1.05rem; margin-top: .25rem; }
 </style>
 """
 

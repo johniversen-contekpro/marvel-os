@@ -23,7 +23,7 @@ jobs:
           python-version: "3.12"
 
       - name: Install deps
-        run: pip install psycopg2-binary
+        run: pip install psycopg2-binary anthropic
 
       - name: Ingest new HubSpot call summaries -> Neon
         env:
@@ -36,3 +36,10 @@ jobs:
           HUBSPOT_ACCESS_TOKEN: ${{ secrets.HUBSPOT_ACCESS_TOKEN }}
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: python ingest_hubspot.py
+
+      - name: Theme-tag new HubSpot call fiches (LLM)
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          ANTHROPIC_WORKSPACE_ID: ${{ secrets.ANTHROPIC_WORKSPACE_ID }}
+        run: python tag_themes.py

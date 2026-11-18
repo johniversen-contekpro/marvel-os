@@ -70,12 +70,18 @@ THEME_CANON = {
 }
 
 _ACCENTS = str.maketrans("àâäéèêëîïôöûüùçñ", "aaaeeeeiioouuucn")
+CANON_VALUES = set(THEME_CANON.values())   # libellés EN déjà canoniques
 
 
 def canon_theme(raw):
     """Étiquette FR brute (accents / séparateurs /- / casse) -> libellé canonique EN,
-    ou None si le thème n'est pas au vocabulaire (loggé, jamais inséré en silence)."""
-    k = raw.strip().lower().translate(_ACCENTS).replace("-", "/")
+    ou None si le thème n'est pas au vocabulaire (loggé, jamais inséré en silence).
+    Idempotent : un libellé DÉJÀ canonique (ex. 'client relations' posé par le tagger
+    LLM sur les fiches HubSpot) est renvoyé tel quel -> préservé à chaque rebuild."""
+    s = raw.strip()
+    if s in CANON_VALUES:
+        return s
+    k = s.lower().translate(_ACCENTS).replace("-", "/")
     k = " ".join(k.split())            # espaces multiples
     k = k.replace(" / ", "/").replace("/ ", "/").replace(" /", "/")
     return THEME_CANON.get(k)

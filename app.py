@@ -51,7 +51,7 @@ DEFAULT_WS = ""  # workspace id vient des secrets (ANTHROPIC_WORKSPACE_ID), jama
 KEY_FROM_SECRETS = bool(os.environ.get("ANTHROPIC_API_KEY"))
 
 SAMPLE_QUESTIONS = [
-    "Onboarding cheat sheet for a new rep: the 5 key themes and the recurring objections.",
+    "What is the total pipeline value, broken down by stage?",
     "Which objections recur on permitting? Cite 2-3 specific calls.",
     "Which calls mention data centers or workforce camps? Is it an emerging vertical?",
     "Which themes dominate, and what does that reveal about how we sell?",
@@ -183,7 +183,8 @@ with st.sidebar:
 
     rows, total = brand_counts()
     st.markdown(f"**{total}** call sheets &nbsp;·&nbsp; "
-                + " · ".join(f"{b} {n}" for b, n in rows))
+                + " · ".join(f"{(b or 'untagged')} {n}" for b, n in rows))
+    st.caption("🟢 HubSpot connected · deals, contacts & calls, synced daily")
 
     st.subheader("Brand scope")
     SCOPES = {

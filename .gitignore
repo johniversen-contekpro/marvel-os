@@ -16,6 +16,9 @@ marvel_os.db
 *.db-wal
 *.db-shm
 
+# Scratch exports (ids/working files) — never commit
+nm_targets.json
+
 # Neon CLI scaffolding (not needed by the Python app)
 .neon
 neon.ts

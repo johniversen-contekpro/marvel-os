@@ -48,6 +48,20 @@ column yourself. Theme tags are a fixed canonical English vocabulary, e.g. 'clie
 'refrigeration', 'gas', 'suppliers', 'maintenance', 'recruitment/team', 'legal/contracts',
 'after-sales service', 'documentation/production'.
 
+Two more tables hold HubSpot CRM data (synced from HubSpot), also queryable with sql_query:
+  - deals(hs_id, dealname, amount, brand, pipeline, stage, closedate, createdate, owner_id):
+    the sales pipeline. `amount` = deal value (numeric, USD). `stage` = resolved stage label.
+    CAUTION on deals.brand: it is derived from the HubSpot pipeline, and today nearly all deals sit
+    in one pipeline, so almost every deal reads brand='modular'. This is NOT a verified brand tag
+    (unlike the call sheets) — never conclude "there is no Mobile business" from the deals table.
+  - contacts(hs_id, email, firstname, lastname, company, jobtitle, lifecyclestage, createdate):
+    people in the CRM. No brand column.
+Use these for CRM questions (pipeline value, deals by stage, contacts by company/title/lifecycle).
+They are SEPARATE from `documents`; there is no clean key to join a call sheet to a deal yet, so
+answer call-content questions from `documents` and CRM questions from `deals`/`contacts` — and say
+which you used. When a brand scope is active, filter `deals` by its brand column where meaningful;
+`contacts` has no brand, so note that it spans both businesses.
+
 Your tools:
   - sql_query(sql): read-only SELECT for structured/aggregate questions (counts, group by, filters
     on brand/date/entity/themes). This is exact and auditable — PREFER it for "how many", "which",
@@ -65,8 +79,9 @@ not a data dump. If the data doesn't support a claim, say so.
 TOOLS = [
     {
         "name": "sql_query",
-        "description": "Run a read-only SELECT/WITH query over the `documents` table. Use for counts, "
-                       "group-by, and exact filters on brand/date/entity/themes. Returns columns + rows.",
+        "description": "Run a read-only SELECT/WITH query. Tables: `documents` (call knowledge sheets), "
+                       "`document_themes(document_id, theme)`, and HubSpot `deals` and `contacts`. "
+                       "Use for counts, group-by, and exact filters. Returns columns + rows.",
         "input_schema": {
             "type": "object",
             "properties": {"sql": {"type": "string", "description": "A single SELECT or WITH query."}},

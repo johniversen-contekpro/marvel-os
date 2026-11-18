@@ -46,6 +46,9 @@ import db
 import marvel_agent as agent
 
 DEFAULT_WS = ""  # workspace id vient des secrets (ANTHROPIC_WORKSPACE_ID), jamais en dur
+# Clé fournie de façon DURABLE (secrets cloud / .env.local) vs saisie de session.
+# Si durable, on cache le champ et on montre un statut "connecté" — un patron ne peut pas l'effacer.
+KEY_FROM_SECRETS = bool(os.environ.get("ANTHROPIC_API_KEY"))
 CHATS_DIR = Path(__file__).resolve().parent / "chats"
 CHATS_DIR.mkdir(exist_ok=True)
 
@@ -83,12 +86,12 @@ section[data-testid="stSidebar"] h2, section[data-testid="stSidebar"] h3 { font-
 
 BRAND_BANNER = """
 <div class="marvel-banner">
-  <div class="marvel-wordmark">🏗️&nbsp;MARVEL&nbsp;<span class="os">OS</span></div>
+  <div class="marvel-wordmark">MARVEL&nbsp;<span class="os">OS</span></div>
   <div class="marvel-sub">Marvel Buildings — one source of truth, with an AI agent on top</div>
 </div>
 """
 
-st.set_page_config(page_title="Marvel OS", page_icon="🏗️", layout="centered")
+st.set_page_config(page_title="Marvel OS", page_icon=":material/hub:", layout="centered")
 
 
 def _check_password():
@@ -185,7 +188,7 @@ if "messages" not in st.session_state:
 
 # --------------------------------------------------------------------------- sidebar
 with st.sidebar:
-    st.title("🏗️ Marvel OS")
+    st.title("Marvel OS")
     st.caption("One source of truth for Marvel's data, with an AI agent on top.")
 
     rows, total = brand_counts()
@@ -232,15 +235,22 @@ with st.sidebar:
             st.rerun()
 
     st.divider()
-    with st.expander("⚙️ Connection", expanded=not os.environ.get("ANTHROPIC_API_KEY")):
-        key = st.text_input("Anthropic API key", type="password",
-                            value=os.environ.get("ANTHROPIC_API_KEY", ""))
-        ws = st.text_input("Workspace ID",
-                           value=os.environ.get("ANTHROPIC_WORKSPACE_ID", DEFAULT_WS))
-        if key:
-            os.environ["ANTHROPIC_API_KEY"] = key
-        if ws:
-            os.environ["ANTHROPIC_WORKSPACE_ID"] = ws
+    if KEY_FROM_SECRETS:
+        # Clé fournie par les secrets : rien à saisir, impossible à casser par mégarde.
+        st.caption("✅ Agent connected — key loaded securely from server secrets.")
+    else:
+        # Aucune clé durable : on propose la saisie (dev local). Session-only, avertissement clair.
+        with st.expander("⚙️ Connection", expanded=True):
+            st.warning("No API key is configured on the server. "
+                       "Any key entered here lasts for this session only.")
+            key = st.text_input("Anthropic API key", type="password",
+                                value=os.environ.get("ANTHROPIC_API_KEY", ""))
+            ws = st.text_input("Workspace ID",
+                               value=os.environ.get("ANTHROPIC_WORKSPACE_ID", DEFAULT_WS))
+            if key:
+                os.environ["ANTHROPIC_API_KEY"] = key
+            if ws:
+                os.environ["ANTHROPIC_WORKSPACE_ID"] = ws
     st.caption(f"Model: `{agent.MODEL}`  ·  No RAG — SQL + full-text + tools.")
 
 # --------------------------------------------------------------------------- header
@@ -268,7 +278,7 @@ def render_tools(tools):
 
 # replay history
 for m in st.session_state.messages:
-    with st.chat_message(m["role"], avatar="🏗️" if m["role"] == "assistant" else None):
+    with st.chat_message(m["role"]):
         st.markdown(m["content"])
         render_tools(m.get("tools"))
 
@@ -287,7 +297,7 @@ if prompt:
     with st.chat_message("user"):
         st.markdown(prompt)
 
-    with st.chat_message("assistant", avatar="🏗️"):
+    with st.chat_message("assistant"):
         tools = []
         try:
             with st.spinner("Thinking — querying the source of truth…"):

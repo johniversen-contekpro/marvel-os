@@ -173,7 +173,7 @@ def main():
 
     print(f"[INFO] {len(results)} call(s) candidat(s) (summary + apres cutoff).")
     now = datetime.now(timezone.utc).isoformat()
-    kept = 0
+    kept = unlinked = 0
     for c in results:
         p = c.get("properties", {})
         summ = extract_summary(p.get("hs_call_body"))
@@ -183,10 +183,16 @@ def main():
         ts = p.get("hs_timestamp", "")
         date = ts[:10] if ts else ""
         deal_id = _assoc_first(cid, "deals")
+        comp_id = _assoc_first(cid, "companies")
+        # Garde-fou qualite : un vrai call CLIENT est rattache a un deal ou une entreprise
+        # HubSpot. Les calls internes (recrutement, admin, coordination) ne le sont pas ->
+        # on les ecarte pour ne pas polluer la source de verite (comme le backfill).
+        if not deal_id and not comp_id:
+            unlinked += 1
+            continue
         dmeta = deals.get(deal_id, {})
         # entite : societe associee > nom du deal > titre du call
         entity = ""
-        comp_id = _assoc_first(cid, "companies")
         if comp_id:
             try:
                 entity = _get(f"https://api.hubapi.com/crm/v3/objects/companies/{comp_id}"
@@ -221,7 +227,8 @@ def main():
         conn.commit()
     conn.close()
     verb = "simule" if DRY_RUN else "ingere"
-    print(f"\n[FAIT] {kept} call(s) HubSpot {verb} (source=hubspot_call, summary only).")
+    print(f"\n[FAIT] {kept} call(s) HubSpot {verb} (source=hubspot_call, summary only) | "
+          f"{unlinked} non rattache(s) (interne/recrutement) ecarte(s).")
 
 
 if __name__ == "__main__":

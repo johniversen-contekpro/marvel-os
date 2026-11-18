@@ -51,9 +51,11 @@ column yourself. Theme tags are a fixed canonical English vocabulary, e.g. 'clie
 Two more tables hold HubSpot CRM data (synced from HubSpot), also queryable with sql_query:
   - deals(hs_id, dealname, amount, brand, pipeline, stage, closedate, createdate, owner_id):
     the sales pipeline. `amount` = deal value (numeric, USD). `stage` = resolved stage label.
-    CAUTION on deals.brand: it is derived from the HubSpot pipeline, and today nearly all deals sit
-    in one pipeline, so almost every deal reads brand='modular'. This is NOT a verified brand tag
-    (unlike the call sheets) — never conclude "there is no Mobile business" from the deals table.
+    deals.brand is a RELIABLE signal: it comes from the deal's product type (HubSpot
+    `type_of_product`). A deal whose product is a Trailer (Mobile Kitchen Rental) = 'mobile';
+    everything else (Kitchen/Restroom/Other, or none) = 'modular'. A deal that is both a kitchen
+    and a trailer counts as 'mobile' (it contains a trailer). The `pipeline` column does NOT
+    distinguish brands (all deals live in one "Sales" pipeline) — use brand, not pipeline, for it.
   - contacts(hs_id, email, firstname, lastname, company, jobtitle, lifecyclestage, createdate):
     people in the CRM. No brand column.
 Use these for CRM questions (pipeline value, deals by stage, contacts by company/title/lifecycle).

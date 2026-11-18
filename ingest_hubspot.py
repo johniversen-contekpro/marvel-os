@@ -7,9 +7,11 @@ Idempotent (upsert sur l'id HubSpot). Réexécutable à volonté.
 Lit HUBSPOT_ACCESS_TOKEN + DATABASE_URL depuis l'environnement / .env.local.
 Ne log JAMAIS de secret.
 
-Signal de marque : les deals sont tagués par leur PIPELINE
-  - "Sales Pipeline" (default)  -> brand 'modular' (cuisines permanentes)
-  - "Rental" (71756716)         -> brand 'mobile'  (location de remorques)
+Signal de marque (règle métier, John 2026-11-18) : dans HubSpot tout est sous une seule
+marque/pipeline, la distinction se lit sur le PRODUIT via le champ deal `type_of_product` :
+  - contient "Trailer" (Mobile Kitchen Rental) -> brand 'mobile'
+  - tout le reste (Kitchen/Restroom/Other, ou vide) -> brand 'modular'
+Le pipeline, lui, ne distingue pas les marques (tous les deals sont dans "Sales").
 """
 import os
 import re
@@ -48,14 +50,21 @@ if not db.IS_POSTGRES:
     raise SystemExit("[!] DATABASE_URL (Neon/Postgres) requis pour ce connecteur")
 
 HDR = {"Authorization": f"Bearer {TOKEN}", "Content-Type": "application/json"}
-PIPELINE_BRAND = {"default": "modular", "71756716": "mobile"}
+
+
+def brand_from_product(type_of_product):
+    """Marque réelle d'un deal depuis `type_of_product` (multi-select ';').
+    Règle : un produit Trailer = Mobile Kitchen Rental -> 'mobile' ; sinon 'modular'
+    (Kitchen/Restroom/Other, ou champ vide = 'le reste')."""
+    toks = {t.strip().lower() for t in (type_of_product or "").split(";") if t.strip()}
+    return "mobile" if "trailer" in toks else "modular"
 
 DDL = """
 CREATE TABLE IF NOT EXISTS deals (
     hs_id       TEXT PRIMARY KEY,
     dealname    TEXT,
     amount      NUMERIC,
-    brand       TEXT,              -- modular (Sales Pipeline) / mobile (Rental)
+    brand       TEXT,              -- mobile (type_of_product ~ Trailer) / modular (rest)
     pipeline    TEXT,              -- libellé de pipeline
     stage       TEXT,              -- libellé d'étape résolu
     stage_id    TEXT,
@@ -132,7 +141,7 @@ def main():
     stage_lbl, pipe_lbl = _pipelines_map()
 
     # ---- deals ----
-    dprops = ["dealname", "amount", "dealstage", "pipeline",
+    dprops = ["dealname", "amount", "dealstage", "pipeline", "type_of_product",
               "closedate", "createdate", "hubspot_owner_id"]
     deals = _paginate("deals", dprops)
     for x in deals:
@@ -146,7 +155,7 @@ def main():
             "brand=EXCLUDED.brand, pipeline=EXCLUDED.pipeline, stage=EXCLUDED.stage, "
             "stage_id=EXCLUDED.stage_id, closedate=EXCLUDED.closedate, createdate=EXCLUDED.createdate, "
             "owner_id=EXCLUDED.owner_id, raw=EXCLUDED.raw, updated_at=EXCLUDED.updated_at",
-            (x["id"], p.get("dealname"), _f(p.get("amount")), PIPELINE_BRAND.get(pid),
+            (x["id"], p.get("dealname"), _f(p.get("amount")), brand_from_product(p.get("type_of_product")),
              pipe_lbl.get(pid, pid), stage_lbl.get(p.get("dealstage"), p.get("dealstage")),
              p.get("dealstage"), p.get("closedate"), p.get("createdate"),
              p.get("hubspot_owner_id"), json.dumps(p, ensure_ascii=False), now),

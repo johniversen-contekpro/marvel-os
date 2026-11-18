@@ -124,9 +124,12 @@ COLS = ["source", "source_id", "doc_type", "title", "date", "entity",
 
 def upsert(conn, vals):
     ph = ", ".join(["%s"] * len(COLS))
+    # On NE touche PAS a `themes` sur conflit : il est pose par le tagger LLM (tag_themes.py)
+    # apres l'ingestion. Sinon chaque run quotidien l'ecraserait a '' et re-taggerait pour rien.
+    keep = ("source", "source_id", "themes")
     sql = (f"INSERT INTO documents ({', '.join(COLS)}) VALUES ({ph}) "
            f"ON CONFLICT (source, source_id) DO UPDATE SET "
-           + ", ".join(f"{c}=EXCLUDED.{c}" for c in COLS if c not in ("source", "source_id")))
+           + ", ".join(f"{c}=EXCLUDED.{c}" for c in COLS if c not in keep))
     cur = conn.cursor()
     cur.execute(sql, vals)
 

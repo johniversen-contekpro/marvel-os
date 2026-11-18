@@ -274,7 +274,7 @@ for m in st.session_state.messages:
         render_tools(m.get("tools"))
 
 # new input: typed box OR a clicked sample question
-prompt = st.chat_input("Ask about our calls…")
+prompt = st.chat_input("Ask anything about our calls, deals and contacts…")
 if not prompt and "pending_q" in st.session_state:
     prompt = st.session_state.pop("pending_q")
 

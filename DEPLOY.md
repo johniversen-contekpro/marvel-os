@@ -45,10 +45,11 @@ a login screen. It runs 24/7; your laptop can be off.
   been in this repo's git history.
 
 ## Things to know
-- **Saved chats reset on redeploy.** Streamlit Cloud's filesystem is *ephemeral*: `chats/` is
-  fine during a session but wiped on reboot/redeploy. Durable history = store chats in Postgres
-  (small follow-up).
-- **API key.** Use a clean, dedicated key — not a temporary `sk-ant-usr-...` one.
+- **Conversation history is durable.** Chats are stored in Postgres (the `chats` table in Neon),
+  so they survive reboots/redeploys and follow the app everywhere. (The old on-disk `chats/`
+  storage is gone.)
+- **API key.** A clean `sk-ant-api...` key is ideal, but a `sk-ant-usr-...` key also works as long
+  as `ANTHROPIC_WORKSPACE_ID` is set (the app sends the workspace header).
 
 ## Re-ingest / update data (from your machine, points at Neon)
 `.env.local` (written by `neon deploy`, gitignored) holds your connection strings locally.

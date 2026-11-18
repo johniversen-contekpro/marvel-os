@@ -12,7 +12,9 @@ Table canonique `documents` : conçue pour accueillir N sources (Chorus aujourd'
 Gmail / Ads demain). C'est ÇA le "own our data" : un seul store relationnel, exportable.
 """
 import os
+import json
 import sqlite3
+from datetime import datetime, timezone
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -99,6 +101,15 @@ CREATE TABLE IF NOT EXISTS document_themes (
 );
 CREATE INDEX IF NOT EXISTS document_themes_theme_idx ON document_themes(theme);
 CREATE INDEX IF NOT EXISTS document_themes_doc_idx   ON document_themes(document_id);
+
+-- Conversations du front (historique durable, suit la base -> jamais perdu au redeploy).
+CREATE TABLE IF NOT EXISTS chats (
+    id         TEXT PRIMARY KEY,
+    title      TEXT,
+    scope      TEXT,
+    messages   TEXT,
+    updated_at TEXT
+);
 """
 
 
@@ -242,6 +253,99 @@ def run_select(sql, limit=200):
         cols = [c[0] for c in cur.description] if cur.description else []
         rows = cur.fetchmany(limit)
         return {"columns": cols, "rows": [list(r) for r in rows], "truncated": len(rows) == limit}
+    finally:
+        conn.close()
+
+
+# ---------------------------------------------------------------------------
+# Conversations du front (historique durable : Neon en prod, SQLite en local).
+# On utilise une connexion READ-WRITE (DATABASE_URL) : ce sont les données propres de
+# l'app, pas la source de vérité exposée à l'agent (lui reste sandboxé via run_select).
+# ---------------------------------------------------------------------------
+def ensure_chats_table():
+    """Crée la table chats si absente (idempotent, les deux dialectes)."""
+    conn = get_conn()
+    try:
+        cur = conn.cursor()
+        if IS_POSTGRES:
+            cur.execute(
+                "CREATE TABLE IF NOT EXISTS chats ("
+                " id TEXT PRIMARY KEY, title TEXT, scope TEXT,"
+                " messages JSONB, updated_at TIMESTAMPTZ DEFAULT now())")
+        else:
+            cur.execute(
+                "CREATE TABLE IF NOT EXISTS chats ("
+                " id TEXT PRIMARY KEY, title TEXT, scope TEXT,"
+                " messages TEXT, updated_at TEXT)")
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def save_chat(chat_id, title, scope, messages):
+    """Upsert d'une conversation (messages = liste de dicts role/content/tools)."""
+    payload = json.dumps(messages, ensure_ascii=False)
+    now = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    conn = get_conn()
+    try:
+        cur = conn.cursor()
+        if IS_POSTGRES:
+            cur.execute(
+                "INSERT INTO chats (id, title, scope, messages, updated_at) "
+                "VALUES (%s, %s, %s, %s, now()) "
+                "ON CONFLICT (id) DO UPDATE SET title=EXCLUDED.title, scope=EXCLUDED.scope, "
+                "messages=EXCLUDED.messages, updated_at=now()",
+                (chat_id, title, scope, payload))
+        else:
+            cur.execute(
+                "INSERT INTO chats (id, title, scope, messages, updated_at) "
+                "VALUES (?, ?, ?, ?, ?) "
+                "ON CONFLICT(id) DO UPDATE SET title=excluded.title, scope=excluded.scope, "
+                "messages=excluded.messages, updated_at=excluded.updated_at",
+                (chat_id, title, scope, payload, now))
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def list_chats(limit=200):
+    """Conversations (récentes d'abord) : id, title, scope, updated."""
+    conn = get_conn()
+    try:
+        cur = conn.cursor()
+        ph = "%s" if IS_POSTGRES else "?"
+        cur.execute(
+            f"SELECT id, title, scope, updated_at FROM chats "
+            f"ORDER BY updated_at DESC LIMIT {ph}", (limit,))
+        return [{"id": r[0], "title": r[1], "scope": r[2], "updated": str(r[3])[:19]}
+                for r in cur.fetchall()]
+    finally:
+        conn.close()
+
+
+def load_chat(chat_id):
+    """Messages d'une conversation (liste), [] si absente."""
+    conn = get_conn()
+    try:
+        cur = conn.cursor()
+        ph = "%s" if IS_POSTGRES else "?"
+        cur.execute(f"SELECT messages FROM chats WHERE id = {ph}", (chat_id,))
+        row = cur.fetchone()
+        if not row or row[0] is None:
+            return []
+        data = row[0]
+        return data if isinstance(data, list) else json.loads(data)
+    finally:
+        conn.close()
+
+
+def delete_chat(chat_id):
+    conn = get_conn()
+    try:
+        cur = conn.cursor()
+        ph = "%s" if IS_POSTGRES else "?"
+        cur.execute(f"DELETE FROM chats WHERE id = {ph}", (chat_id,))
+        conn.commit()
     finally:
         conn.close()
 

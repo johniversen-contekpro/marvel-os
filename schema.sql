@@ -59,6 +59,18 @@ CREATE TABLE IF NOT EXISTS document_themes (
 CREATE INDEX IF NOT EXISTS document_themes_theme_idx ON document_themes (theme);
 CREATE INDEX IF NOT EXISTS document_themes_doc_idx   ON document_themes (document_id);
 
+-- Conversations du front : historique DURABLE (suit la base, jamais perdu au redeploy
+-- du conteneur cloud, contrairement au stockage disque ephemere). Donnees propres de
+-- l'app (pas exposees a l'agent en lecture seule). Cree aussi a chaud par db.ensure_chats_table().
+CREATE TABLE IF NOT EXISTS chats (
+    id          TEXT PRIMARY KEY,
+    title       TEXT,
+    scope       TEXT,
+    messages    JSONB,
+    updated_at  TIMESTAMPTZ DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS chats_updated_idx ON chats (updated_at DESC);
+
 -- Gouvernance : rôle LECTURE SEULE pour l'agent (argument sécurité pour la réunion).
 -- L'agent text-to-SQL se connecte via ce rôle -> impossible de muter la source de vérité.
 DO $$

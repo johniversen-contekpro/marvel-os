@@ -49,8 +49,6 @@ DEFAULT_WS = ""  # workspace id vient des secrets (ANTHROPIC_WORKSPACE_ID), jama
 # Clé fournie de façon DURABLE (secrets cloud / .env.local) vs saisie de session.
 # Si durable, on cache le champ et on montre un statut "connecté" — un patron ne peut pas l'effacer.
 KEY_FROM_SECRETS = bool(os.environ.get("ANTHROPIC_API_KEY"))
-CHATS_DIR = Path(__file__).resolve().parent / "chats"
-CHATS_DIR.mkdir(exist_ok=True)
 
 SAMPLE_QUESTIONS = [
     "Onboarding cheat sheet for a new rep: the 5 key themes and the recurring objections.",
@@ -133,41 +131,33 @@ def new_chat_id():
     return datetime.now().strftime("%Y%m%d-%H%M%S")
 
 
+@st.cache_resource
+def _ensure_chats():
+    """Garantit la table chats (une fois par process)."""
+    db.ensure_chats_table()
+    return True
+
+
+_ensure_chats()
+
+
 def save_chat(chat_id, messages, scope):
     if not messages:
         return
     title = next((m["content"] for m in messages if m["role"] == "user"), "New chat")
-    data = {
-        "id": chat_id,
-        "title": title[:60],
-        "scope": scope or "all",
-        "updated": datetime.now().isoformat(timespec="seconds"),
-        "messages": messages,
-    }
-    (CHATS_DIR / f"{chat_id}.json").write_text(
-        json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+    db.save_chat(chat_id, title[:60], scope or "all", messages)
 
 
 def list_chats():
-    out = []
-    for f in CHATS_DIR.glob("*.json"):
-        try:
-            d = json.loads(f.read_text(encoding="utf-8"))
-            out.append(d)
-        except Exception:
-            continue
-    return sorted(out, key=lambda d: d.get("updated", ""), reverse=True)
+    return db.list_chats()
 
 
 def load_chat(chat_id):
-    f = CHATS_DIR / f"{chat_id}.json"
-    if f.exists():
-        return json.loads(f.read_text(encoding="utf-8")).get("messages", [])
-    return []
+    return db.load_chat(chat_id)
 
 
 def delete_chat(chat_id):
-    (CHATS_DIR / f"{chat_id}.json").unlink(missing_ok=True)
+    db.delete_chat(chat_id)
 
 
 @st.cache_data(ttl=300)

@@ -26,8 +26,13 @@ MODEL = os.environ.get("MARVEL_MODEL", "claude-sonnet-4-6")
 SYSTEM = """You are Marvel OS, an analyst assistant over Marvel Buildings' internal source of truth.
 
 The data: a single SQL table `documents` holding knowledge sheets synthesized from recorded
-sales/technical calls (source='chorus', doc_type='call_sheet'). Columns you can query:
-  source_id (unique id = folder name), title, date (YYYY-MM-DD), entity (client/company),
+sales/technical calls (doc_type='call_sheet'). TWO sources feed it, and they are ALL call sheets:
+  - source='chorus'       : hand-made call sheets (the original library),
+  - source='hubspot_call' : AI call summaries synced from HubSpot.
+When you count "call sheets", count ALL rows across both sources unless the user asks for one
+source specifically. Columns you can query:
+  source_id (unique id = folder name for chorus, HubSpot call id for hubspot_call),
+  title, date (YYYY-MM-DD), entity (client/company),
   brand ('modular' = permanent modular kitchens / ContekPro ; 'mobile' = rental kitchen trailers ;
   'multi' = both brands ; 'marvel' = non-kitchen modular), status, themes (';'-separated tags),
   body (full sheet text).

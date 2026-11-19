@@ -87,6 +87,20 @@ def canon_theme(raw):
     return THEME_CANON.get(k)
 
 
+def canon_join(raw):
+    """Tags bruts (FR, encodage douteux, separateurs ';'/',' mixtes) -> libelles canoniques
+    EN, dedoublonnes, joints par ';'. Les tags hors vocabulaire sont ecartes (comme pour
+    document_themes). But : que documents.themes soit en anglais propre, comme la table
+    normalisee, et le reste a chaque re-ingestion (plus de francais/mojibake residuel)."""
+    seen, out = set(), []
+    for t in (raw or "").replace(",", ";").split(";"):
+        c = canon_theme(t.strip())
+        if c and c not in seen:
+            seen.add(c)
+            out.append(c)
+    return ";".join(out)
+
+
 def ascii_name(s):
     repl = {"ç": "c", "é": "e", "è": "e", "ê": "e", "ë": "e", "à": "a", "â": "a", "ä": "a",
             "î": "i", "ï": "i", "ô": "o", "ö": "o", "û": "u", "ü": "u", "ù": "u", "ñ": "n",
@@ -113,7 +127,7 @@ def upsert(conn, row, body):
     vals = [
         "chorus", row["nom_fichier"], "call_sheet", title, row.get("date", ""),
         row.get("entreprise", ""), (row.get("marque", "") or "").strip(),
-        row.get("statut", "").strip(), row.get("themes", ""), body,
+        row.get("statut", "").strip(), canon_join(row.get("themes", "")), body,
         json.dumps({k: row.get(k, "") for k in
                     ("owner", "type_call", "duree_min_est", "folder_id", "transcript_id", "notes")},
                    ensure_ascii=False),

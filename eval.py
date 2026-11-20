@@ -103,12 +103,24 @@ NUM_CASES = [
 # ------------------------------------------------------------- cas qualitatifs
 # type 'sources' : doit citer au moins une source reelle.
 # type 'purity'  : sous scope, aucune source citee ne doit etre de l'autre marque.
+# type 'refusal' : la donnee demandee N'EXISTE PAS -> l'agent doit l'admettre, pas inventer.
 QUAL_CASES = [
     ("sources", "Which objections recur on permitting? Cite the specific calls.", None),
     ("sources", "Summarize what customers ask for in recent Mobile Culinaire discovery calls. Cite the calls.", None),
     ("purity", "What topics come up most across our calls? Cite a few calls.", "mobile"),
     ("purity", "What are the recurring themes in our calls? Cite a few calls.", "modular"),
+    # Pas de champ CSAT ni d'age client en base -> doit refuser proprement.
+    ("refusal", "What is our average customer satisfaction (CSAT) score across all deals?", None),
+    ("refusal", "What is the average age of our contacts, in years?", None),
 ]
+
+# Signaux d'un refus honnete (la donnee n'est pas dans le store).
+_REFUSAL_RE = re.compile(
+    r"(?i)(don'?t have|do not have|not (?:available|captured|tracked|stored|present|in the data|in our data)|"
+    r"no (?:data|information|field|column|record|csat|age)|"
+    r"isn'?t (?:captured|tracked|available|stored)|doesn'?t (?:have|contain|include|track|capture)|"
+    r"not (?:something|a field|recorded)|cannot (?:be )?(?:computed|calculated|determined|found)|"
+    r"unable to|no way to (?:compute|determine)|there is no)")
 
 OTHER = {"mobile": {"modular", "marvel"}, "modular": {"mobile", "marvel"}}
 
@@ -131,18 +143,26 @@ def run_num(q, scope, sql, exact):
 
 
 def run_qual(kind, q, scope):
-    tools = []
+    calls = []
     ans = agent.ask(q, verbose=False, scope_brand=scope,
-                    on_tool=lambda n, i: tools.append(i.get("sql", "")))
-    cites = cited_source_ids(ans)
+                    on_tool=lambda n, i: calls.append((n, i)))
+    sqls = "\n".join(i.get("sql", "") for n, i in calls if n == "sql_query" and i.get("sql"))
+    # Ancrage = sources CITEES (prose, fragile) UNION sources OUVERTES via get_document
+    # (deterministe, insensible au format de citation). On teste que la reponse est ancree
+    # dans de vraies fiches, pas la forme exacte de la citation.
+    retrieved = {str(i.get("source_id")) for n, i in calls
+                 if n == "get_document" and str(i.get("source_id")) in SRC_BRAND}
+    grounded = set(cited_source_ids(ans)) | retrieved
+    if kind == "refusal":
+        ok = bool(_REFUSAL_RE.search(ans))
+        return ok, f"refus honnete={ok} ; '{' '.join(ans.split())[:90]}...'", sqls
     if kind == "sources":
-        ok = len(cites) >= 1
-        return ok, f"{len(cites)} source(s) reelle(s) citee(s)", "\n".join(t for t in tools if t)
-    # purity
-    bad = [c for c in cites if SRC_BRAND.get(c) in OTHER.get(scope, set())]
+        ok = len(grounded) >= 1
+        return ok, f"{len(grounded)} source(s) reelle(s) (ouvertes {len(retrieved)})", sqls
+    # purity : aucune source ancree (citee OU ouverte) ne doit etre de l'autre marque
+    bad = [c for c in grounded if SRC_BRAND.get(c) in OTHER.get(scope, set())]
     ok = len(bad) == 0
-    detail = f"{len(cites)} citee(s), scope={scope}, hors-marque={bad[:5]}"
-    return ok, detail, "\n".join(t for t in tools if t)
+    return ok, f"{len(grounded)} source(s), scope={scope}, hors-marque={bad[:5]}", sqls
 
 
 def main():

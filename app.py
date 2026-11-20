@@ -246,8 +246,9 @@ with st.sidebar:
 
 # --------------------------------------------------------------------------- header
 st.markdown(BRAND_BANNER, unsafe_allow_html=True)
-st.caption("Plain-language questions over 327 synthesized sales/technical calls. "
-           "Every answer is sourced back to the call it came from.")
+st.caption("Plain-language questions over hundreds of synthesized sales and technical call summaries "
+           "(Chorus and HubSpot), now joined by live HubSpot deals and contacts. "
+           "Every answer is sourced back to the record it came from.")
 if scope_brand:
     st.info(f"🎯 Scope locked to **{scope_brand.capitalize()}** — the agent ignores the other brand.")
 else:
